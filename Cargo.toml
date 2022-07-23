@@ -1,6 +1,6 @@
 [package]
 name = "catp"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "Print the output of a running process"
 authors = ["Yujia Qiao <code@rapiz.me>"]
@@ -13,5 +13,5 @@ readme = "README.md"
 
 [dependencies]
 clap = { version = "3.2.14", features = ["derive"] }
-nix = { version = "0.24.2", features = ["ptrace", "process"] }
+nix = { version = "0.24.2", features = ["ptrace", "process", "uio"] }
 anyhow = "1.0.58"
