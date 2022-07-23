@@ -1,6 +1,6 @@
 [package]
 name = "catp"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Print the output of a running process"
 authors = ["Yujia Qiao <code@rapiz.me>"]
