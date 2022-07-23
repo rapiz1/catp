@@ -29,6 +29,7 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+          target: ${{ matrix.target }}
       - name: Run tests
         run: cargo test --release --target ${{ matrix.target }} --verbose
       - name: Build release
