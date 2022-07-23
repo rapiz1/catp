@@ -1,11 +1,10 @@
-use std::io::Write;
-use std::mem::size_of;
+use std::io::{IoSliceMut, Write};
 
 use anyhow::{Context, Result};
 use clap::Parser;
 use nix::errno::Errno;
-use nix::libc::{c_long, SYS_write};
-use nix::sys::ptrace::AddressType;
+use nix::libc::SYS_write;
+use nix::sys::uio::{process_vm_readv, RemoteIoVec};
 use nix::sys::wait::WaitStatus;
 use nix::sys::{ptrace, wait};
 use nix::unistd::Pid;
@@ -32,18 +31,34 @@ pub struct CatpArgs {
     verbose: bool,
 }
 
-fn read_data(pid: Pid, buf: u64, len: u64) -> Result<Vec<u8>> {
-    let word_size = size_of::<c_long>();
-    let mut v: Vec<u8> = vec![];
-    let mut pos = buf;
-    let end = buf + len;
-    while pos < end {
-        let word = ptrace::read(pid, pos as AddressType)?;
-        let len = word_size.min((end - pos) as usize);
-        v.extend_from_slice(&word.to_le_bytes()[..len]);
-        pos += word_size as u64;
-    }
-    Ok(v)
+// fn ptrace_read_data(pid: Pid, ptr: u64, len: u64) -> Result<Vec<u8>> {
+//     let word_size = size_of::<c_long>();
+//     let mut v: Vec<u8> = vec![];
+//     let mut pos = ptr;
+//     let end = ptr + len;
+//     while pos < end {
+//         let word = ptrace::read(pid, pos as AddressType)?;
+//         let len = word_size.min((end - pos) as usize);
+//         v.extend_from_slice(&word.to_le_bytes()[..len]);
+//         pos += word_size as u64;
+//     }
+//     Ok(v)
+// }
+
+fn vm_read_data(pid: Pid, ptr: u64, len: u64) -> Result<Vec<u8>> {
+    let mut buf = vec![0u8; len as usize];
+    let mut local = [IoSliceMut::new(buf.as_mut_slice())];
+    let remote = [RemoteIoVec {
+        base: ptr as usize,
+        len: len as usize,
+    }];
+    process_vm_readv(pid, &mut local, &remote)?;
+
+    Ok(buf)
+}
+
+fn read_data(pid: Pid, ptr: u64, len: u64) -> Result<Vec<u8>> {
+    vm_read_data(pid, ptr, len)
 }
 
 pub fn catp(args: CatpArgs) -> Result<()> {
