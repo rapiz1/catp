@@ -74,10 +74,8 @@ pub fn catp(args: CatpArgs) -> Result<()> {
     let pid = Pid::from_raw(args.pid as i32);
     let opts = ptrace::Options::PTRACE_O_TRACESYSGOOD;
     ptrace::attach(pid).with_context(|| "attach")?;
-    wait::wait()?;
-    ptrace::setoptions(pid, opts).with_context(|| "setoptions")?;
-    ptrace::syscall(pid, None).with_context(|| "syscall")?;
 
+    let mut first_ptrace_stop = true;
     let mut in_syscall = false;
     loop {
         match wait::wait() {
@@ -107,7 +105,17 @@ pub fn catp(args: CatpArgs) -> Result<()> {
                 ptrace::syscall(pid, None).with_context(|| "syscall")?;
             }
             Ok(WaitStatus::Stopped(pid, sig)) => {
-                ptrace::syscall(pid, sig).with_context(|| "cont")?
+                if first_ptrace_stop
+                    && ptrace::setoptions(pid, opts)
+                        .with_context(|| "setoptions")
+                        .is_ok()
+                {
+                    first_ptrace_stop = false;
+                    // This should be a SIGSTP sent by attach. Suppress it
+                    ptrace::syscall(pid, None).with_context(|| "syscall")?
+                } else {
+                    ptrace::syscall(pid, sig).with_context(|| "syscall")?
+                }
             }
             Ok(_) => break,
             Err(Errno::ECHILD) => break,
