@@ -5,5 +5,5 @@ use clap::Parser;
 fn main() -> Result<()> {
     let args = CatpArgs::parse();
 
-    catp(args)
+    catp(args, &mut std::io::stdout())
 }

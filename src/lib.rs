@@ -1,4 +1,4 @@
-use std::io::{IoSliceMut, Write};
+use std::io::{self, IoSliceMut};
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -14,12 +14,12 @@ use nix::unistd::Pid;
 pub struct CatpArgs {
     // TODO: Maybe handle multi-threaded programs
     /// PID of the process to print
-    pid: u32,
+    pub pid: u32,
 
     // TODO: Support multiple fds
     /// File descriptor to print
     #[clap(short, long, default_value_t = 1)]
-    fd: u32,
+    pub fd: u32,
 
     // TODO:
     // Print child processes as they are created by currently traced processes as
@@ -28,7 +28,7 @@ pub struct CatpArgs {
     // follow_forks: bool,
     /// Print more verbose information to stderr
     #[clap(short, long, action, default_value_t = false)]
-    verbose: bool,
+    pub verbose: bool,
 }
 
 // fn ptrace_read_data(pid: Pid, ptr: u64, len: u64) -> Result<Vec<u8>> {
@@ -61,7 +61,7 @@ fn read_data(pid: Pid, ptr: u64, len: u64) -> Result<Vec<u8>> {
     vm_read_data(pid, ptr, len)
 }
 
-pub fn catp(args: CatpArgs) -> Result<()> {
+pub fn catp<T: io::Write>(args: CatpArgs, output: &mut T) -> Result<()> {
     let verbose = args.verbose;
     if verbose {
         eprintln!("{:#?}", args);
@@ -97,7 +97,7 @@ pub fn catp(args: CatpArgs) -> Result<()> {
                             if verbose {
                                 eprintln!("{:?} {:?} {:?}", buf, len, data);
                             }
-                            std::io::stdout().write_all(&data)?;
+                            output.write_all(&data)?;
                         }
                     }
                     in_syscall = true;

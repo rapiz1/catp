@@ -1,0 +1,12 @@
+#!/bin/bash
+
+read -r
+
+i=0
+
+while [[ i -lt 5 ]]
+do
+  echo hello $i "$(date -Is)"
+  i=$((i+1))
+  sleep 0.5
+done
