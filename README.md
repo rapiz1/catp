@@ -1,5 +1,8 @@
 # catp
 
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/rapiz1/catp)](https://github.com/rapiz1/rathole/releases)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/rapiz1/catp/Rust/main)
+
 Print the output of *a running process*
 
 ![screenshot](docs/img/screenshot.png)
