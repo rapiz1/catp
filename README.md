@@ -31,3 +31,7 @@ However, we may regret that decision and don't want to restart the process. Or w
 So it should work for most applications. It's not wise to `catp` an IO-sensitive application for a long time since it slows down the syscall.
 
 `catp` requires `ptrace` privilege to run, which in most systems means root.
+
+## Platform
+
+Currently only x86_64 Linux is supported.
