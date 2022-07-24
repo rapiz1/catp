@@ -95,7 +95,7 @@ pub fn catp(args: CatpArgs) -> Result<()> {
                             let len = regs.rdx;
                             let data = read_data(pid, buf, len).with_context(|| "read_data")?;
                             if verbose {
-                                println!("{:?} {:?} {:?}", buf, len, data);
+                                eprintln!("{:?} {:?} {:?}", buf, len, data);
                             }
                             std::io::stdout().write_all(&data)?;
                         }
