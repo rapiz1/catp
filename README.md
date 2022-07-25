@@ -8,7 +8,7 @@ Print the output of *a running process*
 ![screenshot](docs/img/screenshot.png)
 
 ```plain
-catp 0.1.0
+catp 0.2.0
 Print the output of a running process
 
 USAGE:
@@ -18,7 +18,6 @@ ARGS:
     <PID>    PID of the process to print
 
 OPTIONS:
-    -f, --fd <FD>    File descriptor to print [default: 1]
     -h, --help       Print help information
     -v, --verbose    Print more verbose information to stderr
     -V, --version    Print version information
