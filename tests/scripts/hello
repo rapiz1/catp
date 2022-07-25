@@ -7,6 +7,9 @@ i=0
 while [[ i -lt 5 ]]
 do
   echo hello $i "$(date -Is)"
+  # bash is tricky! this actually writes to 1 instead of 2
+  # don't know how to write to 2 in bash
+  # echo world $i "$(date -Is)" >&2
   i=$((i+1))
   sleep 0.5
 done

@@ -3,7 +3,7 @@ use std::io::{self, IoSliceMut};
 use anyhow::{Context, Result};
 use clap::Parser;
 use nix::errno::Errno;
-use nix::libc::SYS_write;
+use nix::libc::{SYS_write, STDERR_FILENO, STDOUT_FILENO};
 use nix::sys::uio::{process_vm_readv, RemoteIoVec};
 use nix::sys::wait::WaitStatus;
 use nix::sys::{ptrace, wait};
@@ -12,20 +12,12 @@ use nix::unistd::Pid;
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
 pub struct CatpArgs {
-    // TODO: Maybe handle multi-threaded programs
+    // TODO: Maybe handle multi-threaded programs. Implement -f --follow-forks
+    // Trace child processes as they are created by currently traced processes as
+    // a result of the fork(2), vfork(2) and clone(2) system calls.
     /// PID of the process to print
     pub pid: u32,
 
-    // TODO: Support multiple fds
-    /// File descriptor to print
-    #[clap(short, long, default_value_t = 1)]
-    pub fd: u32,
-
-    // TODO:
-    // Print child processes as they are created by currently traced processes as
-    // a result of the fork(2), vfork(2) and clone(2) system calls.
-    // #[clap(short, long, default_value_t = false)]
-    // follow_forks: bool,
     /// Print more verbose information to stderr
     #[clap(short, long, action, default_value_t = false)]
     pub verbose: bool,
@@ -61,7 +53,11 @@ fn read_data(pid: Pid, ptr: u64, len: u64) -> Result<Vec<u8>> {
     vm_read_data(pid, ptr, len)
 }
 
-pub fn catp<T: io::Write>(args: CatpArgs, output: &mut T) -> Result<()> {
+pub fn catp<T: io::Write, S: io::Write>(
+    args: CatpArgs,
+    stdout: &mut T,
+    stderr: &mut S,
+) -> Result<()> {
     let verbose = args.verbose;
     if verbose {
         eprintln!("{:#?}", args);
@@ -89,15 +85,19 @@ pub fn catp<T: io::Write>(args: CatpArgs, output: &mut T) -> Result<()> {
                         if verbose {
                             eprintln!("{:?}, {:?}", pid, regs);
                         }
-                        let fd = regs.rdi as u32;
-                        if fd == args.fd {
+                        let fd = regs.rdi as i32;
+                        if fd == STDOUT_FILENO || fd == STDERR_FILENO {
                             let buf = regs.rsi;
                             let len = regs.rdx;
                             let data = read_data(pid, buf, len).with_context(|| "read_data")?;
                             if verbose {
-                                eprintln!("{:?} {:?} {:?}", buf, len, data);
+                                eprintln!("{}, {:?} {:?} {:?}", fd, buf, len, data);
                             }
-                            output.write_all(&data)?;
+                            if fd == STDOUT_FILENO {
+                                stdout.write_all(&data)?;
+                            } else {
+                                stderr.write_all(&data)?;
+                            }
                         }
                     }
                     in_syscall = true;
