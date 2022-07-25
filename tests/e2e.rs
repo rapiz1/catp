@@ -25,8 +25,8 @@ fn hello() {
     // Start hello
     drop(p.stdin.take());
 
-    // We only need to wait for catp to avoid race because catp waits for hello
     let (actual_stdout, actual_stderr) = t.join().unwrap();
+    let _ = p.wait();
 
     let mut expected_stderr = vec![];
     p.stderr
