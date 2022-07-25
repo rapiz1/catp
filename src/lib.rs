@@ -1,3 +1,5 @@
+mod platform;
+
 use std::io::{self, IoSliceMut};
 
 use anyhow::{Context, Result};
@@ -8,6 +10,7 @@ use nix::sys::uio::{process_vm_readv, RemoteIoVec};
 use nix::sys::wait::WaitStatus;
 use nix::sys::{ptrace, wait};
 use nix::unistd::Pid;
+use platform::{PlatformRegs, SysWriteArgs};
 
 #[derive(Parser, Debug)]
 #[clap(version, about, long_about = None)]
@@ -23,22 +26,8 @@ pub struct CatpArgs {
     pub verbose: bool,
 }
 
-// fn ptrace_read_data(pid: Pid, ptr: u64, len: u64) -> Result<Vec<u8>> {
-//     let word_size = size_of::<c_long>();
-//     let mut v: Vec<u8> = vec![];
-//     let mut pos = ptr;
-//     let end = ptr + len;
-//     while pos < end {
-//         let word = ptrace::read(pid, pos as AddressType)?;
-//         let len = word_size.min((end - pos) as usize);
-//         v.extend_from_slice(&word.to_le_bytes()[..len]);
-//         pos += word_size as u64;
-//     }
-//     Ok(v)
-// }
-
-fn vm_read_data(pid: Pid, ptr: u64, len: u64) -> Result<Vec<u8>> {
-    let mut buf = vec![0u8; len as usize];
+fn vm_read_data(pid: Pid, ptr: usize, len: usize) -> Result<Vec<u8>> {
+    let mut buf = vec![0u8; len];
     let mut local = [IoSliceMut::new(buf.as_mut_slice())];
     let remote = [RemoteIoVec {
         base: ptr as usize,
@@ -49,7 +38,7 @@ fn vm_read_data(pid: Pid, ptr: u64, len: u64) -> Result<Vec<u8>> {
     Ok(buf)
 }
 
-fn read_data(pid: Pid, ptr: u64, len: u64) -> Result<Vec<u8>> {
+fn read_data(pid: Pid, ptr: usize, len: usize) -> Result<Vec<u8>> {
     vm_read_data(pid, ptr, len)
 }
 
@@ -80,18 +69,18 @@ pub fn catp<T: io::Write, S: io::Write>(
                     in_syscall = false;
                 } else {
                     let regs = ptrace::getregs(pid).with_context(|| "getregs")?;
-                    let sysno = regs.orig_rax;
-                    if sysno == (SYS_write as u64) {
+                    let sysno = regs.get_sysno();
+                    if sysno == SYS_write as usize {
                         if verbose {
                             eprintln!("{:?}, {:?}", pid, regs);
                         }
-                        let fd = regs.rdi as i32;
+                        let fd: i32 = regs.get_fd();
                         if fd == STDOUT_FILENO || fd == STDERR_FILENO {
-                            let buf = regs.rsi;
-                            let len = regs.rdx;
-                            let data = read_data(pid, buf, len).with_context(|| "read_data")?;
+                            let ptr = regs.get_ptr();
+                            let len = regs.get_len();
+                            let data = read_data(pid, ptr, len).with_context(|| "read_data")?;
                             if verbose {
-                                eprintln!("{}, {:?} {:?} {:?}", fd, buf, len, data);
+                                eprintln!("{}, {:?} {:?} {:?}", fd, ptr, len, data);
                             }
                             if fd == STDOUT_FILENO {
                                 stdout.write_all(&data)?;
