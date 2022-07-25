@@ -42,12 +42,6 @@ fn hello() {
         .read_to_end(&mut expected_stdout)
         .unwrap();
 
-    println!(
-        "{}, {}",
-        String::from_utf8(actual_stdout.clone()).unwrap(),
-        String::from_utf8(actual_stderr.clone()).unwrap()
-    );
-
     assert_eq!(actual_stdout, expected_stdout);
     assert_eq!(actual_stderr, expected_stderr);
 }
