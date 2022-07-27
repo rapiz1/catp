@@ -1,6 +1,6 @@
 # catp
 
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/rapiz1/catp)](https://github.com/rapiz1/rathole/releases)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/rapiz1/catp)](https://github.com/rapiz1/catp/releases)
 ![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/rapiz1/catp/Rust/main)
 
 Print the output of *a running process*
@@ -38,6 +38,10 @@ Then just type `catp`!
 So it should work for most applications. Since it slows down the syscall, it may impact the performance of IO-sensitive applications.
 
 `catp` requires `ptrace` privilege to run, which in most systems means root.
+
+## Get Started
+
+Download the binary from [release](https://github.com/rapiz1/catp/releases). The one with `gnu` should work with a really recent glibc version. If that's not working, try the `musl` one.
 
 ## Platform
 
